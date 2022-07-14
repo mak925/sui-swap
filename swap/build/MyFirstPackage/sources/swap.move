@@ -61,15 +61,15 @@ module my_first_package::swap{
 #[test_only]
 module my_first_package::test_swap{
     use sui::sui::{SUI};
-    use sui::coin::{Coin, TreasuryCap, mint};
+    use sui::coin::{Coin, TreasuryCap, mint_for_testing};
     use sui::transfer;
 
-    use sui::test_scenario::{Self, Scenario, next_tx, ctx, take_shared, take_owned, return_shared, return_owned};
+    use sui::test_scenario::{Self, Scenario, next_tx, ctx, take_shared, take_owned, return_shared};
     use fungible_tokens::managed::{MANAGED, test_init as managed_test_init};
     use my_first_package::swap::{deposit_managed, swap_for_managed, Pool, test_init};
     
-    fun scenario(): Scenario { test_scenario::begin(&@0xABC) }
-    fun people(): (address, address, address) { (@0xABC, @0xE05, @0xFACE) }
+    fun scenario(): Scenario { test_scenario::begin(&@0x65916d9c6fdfec3e6bc6448a727ef9ad31761479) }
+    fun people(): (address, address, address) { (@0x65916d9c6fdfec3e6bc6448a727ef9ad31761479, @0xE05, @0xFACE) }
     
     #[test]
     fun test_one() {
@@ -87,7 +87,7 @@ module my_first_package::test_swap{
         // admin mints MANAGED coins to himself
         next_tx(test, &admin);{
             let cap = take_owned<TreasuryCap<MANAGED>>(test);
-            let coin = fungible_tokens::managed::mint(&mut cap, 10, ctx(test));
+            let coin = fungible_tokens::managed::mint(&mut cap, 1, ctx(test));
             test_scenario::return_owned(test, cap);
             transfer::transfer(coin, admin);
         };
@@ -101,21 +101,21 @@ module my_first_package::test_swap{
             return_shared(test, pool);
         };
 
-        // admin mints some SUI to themselves
+        // admin mints some SUI to themselves in test setting 
         next_tx(test, &admin);{
-            let cap = take_owned<TreasuryCap<SUI>>(test);
-            let coins = mint(&mut cap, 1000, ctx(test));
-            transfer::transfer(coins, admin);
-            return_owned(test, cap);
+            //let cap = take_owned<TreasuryCap<SUI>>(test);
+            let coin = mint_for_testing<SUI>(1, ctx(test));
+            transfer::transfer(coin, admin);
+            //return_owned(test, cap);
         };  
         
         // admin swaps SUI for MANAGED using mutable shared Pool object
         next_tx(test, &admin);{
-            let sui = take_owned<Coin<SUI>>(test);
-            let pool = take_shared<Pool>(test);
-            let pool_ref = test_scenario::borrow_mut(&mut pool);
-            let managed = swap_for_managed(pool_ref, sui, ctx(test));
-            transfer::transfer(managed, admin);
+            let sui = take_owned<Coin<SUI>>(test); 
+            let pool = take_shared<Pool>(test);   
+            let pool_ref = test_scenario::borrow_mut(&mut pool); 
+            let managed = swap_for_managed(pool_ref, sui, ctx(test)); 
+            transfer::transfer(managed, admin); 
             return_shared(test, pool); 
         }
     }
